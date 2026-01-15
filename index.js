@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const express = require('express');
 const helmet = require('helmet'); // New security import
 const cors = require('cors');     // FIX: You forgot to require cors
@@ -12,14 +13,25 @@ app.use(express.json());      // Standard for receiving JSON data
 
 // Environment Variables
 const MONGO_URI = process.env.MONGO_URI; 
-const PORT = process.env.PORT || 80; // Uses .env port or defaults to 80
+const PORT = 80; // Uses .env port or defaults to 80
 
 // Routes
 app.get('/api/status', (req, res) => {
   res.json({ message: "AWS Backend is reachable from Galway!" });
 });
 
-// Start Server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running at http://34.252.254.167:${PORT}`);
-});
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log("✅ Successfully connected to MongoDB");
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running at http://34.252.254.167:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Error:", err.message);
+    process.exit(1); // Stop the server if the password is wrong
+  });
+
+
+
+
