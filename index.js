@@ -1,63 +1,48 @@
 const mongoose = require('mongoose');
 const express = require('express');
-const helmet = require('helmet'); // New security import
-const cors = require('cors');     // FIX: You forgot to require cors
+const helmet = require('helmet');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
 
-// Security and Middleware 
-app.use(helmet());           // Protects against common web vulnerabilities
-app.use(cors());             // Allows your mobile app to talk to this server [cite: 243]
-app.use(express.json());      // Standard for receiving JSON data
+// Middleware
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
 
-// Environment Variables
-const MONGO_URI = process.env.MONGO_URI; 
+const MONGO_URI = process.env.MONGO_URI;
 const PORT = process.env.PORT || 3000;
 
-// Mongoose Schema and Model
-const productSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  price: { type: Number, default: 0 },
-  description: { type: String }
+// --- DATABASE SCHEMA ---
+const QuoteSchema = new mongoose.Schema({
+  text: String,
+  quote: String,
+  createdAt: { type: Date, default: Date.now }
 });
+const Quote = mongoose.model('Quote', QuoteSchema);
 
-const Product = mongoose.model('Product', productSchema);
+// --- ROUTES ---
 
-
-// Routes
+// Existing Status Route
 app.get('/api/status', (req, res) => {
   res.json({ 
     status: "Online",
     message: "AWS Backend is reachable!",
-    owner: "Fergus Downey", // Change this to your name!!!
+    owner: "Student Name", // Change this to your name!!!
     timestamp: new Date()
   });
 });
 
-
-app.get('/products', async (req, res) => {
+// NEW: Route to save data to MongoDB
+app.post('/api/save-quote', async (req, res) => {
   try {
-    const products = await Product.find();
-    res.json(products);
+    const { text, quote } = req.body;
+    const newEntry = new Quote({ text, quote });
+    await newEntry.save();
+    res.status(201).json({ message: "Saved successfully!", data: newEntry });
   } catch (err) {
-    res.status(500).json({ message: "Error fetching products" });
-  }
-});
-
-// REQUIREMENT: Add a POST route for '/'
-app.post('/products', async (req, res) => {
-  try {
-    const { name, price, description } = req.body;
-    const newProduct = new Product({ name, price, description });
-    await newProduct.save();
-
-    res.status(201).json({
-      message: "Product added successfully!", // Requirement satisfied
-      product: newProduct
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Error adding product", error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -70,9 +55,8 @@ mongoose.connect(MONGO_URI)
   })
   .catch((err) => {
     console.error("❌ MongoDB Connection Error:", err.message);
-    process.exit(1); // Stop the server if the password is wrong
+    process.exit(1);
   });
-
 
 
 
