@@ -37,9 +37,13 @@ app.get('/api/status', (req, res) => {
 // NEW: Route to save data to MongoDB
 app.post('/api/save-quote', async (req, res) => {
   try {
-    const { text, quote } = req.body;
+    // Adding default values in case one is missing
+    const { text = "No text", quote = "No quote" } = req.body;
+
     const newEntry = new Quote({ text, quote });
     await newEntry.save();
+
+    console.log("📥 Data saved to MongoDB:", newEntry);
     res.status(201).json({ message: "Saved successfully!", data: newEntry });
   } catch (err) {
     res.status(500).json({ error: err.message });
