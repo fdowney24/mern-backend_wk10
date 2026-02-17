@@ -4,15 +4,24 @@ const Product = require('../models/Product'); // Needed for seeding
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    const uri = process.env.MONGO_URI;
+    if (!uri) throw new Error('MONGO_URI is not defined in environment');
+
+    await mongoose.connect(uri, { /* options */ });
     console.log("✅ Successfully connected to MongoDB");
 
     // Seeding Logic moved here
-    const count = await Product.countDocuments();
-    if (count === 0) {
-      const seedProducts = [ /* ... your seed data ... */ ];
-      await Product.insertMany(seedProducts);
-      console.log('🟢 Seeded initial products');
+    const seedProducts = [
+      { name: 'tshirt', price: 20, description: 'Large green tshirt', image: 'base64string...' },
+      // Add more seed items here if desired
+    ];
+
+    for (const p of seedProducts) {
+      const exists = await Product.findOne({ name: p.name });
+      if (!exists) {
+        await Product.create(p);
+        console.log(`🟢 Seeded product: ${p.name}`);
+      }
     }
 
   } catch (err) {
