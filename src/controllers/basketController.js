@@ -70,3 +70,40 @@ exports.removeFromBasket = async (req, res) => {
     res.status(500).json({ message: 'Error removing from basket', error: err.message });
   }
 };
+
+// Remove a basket item by its subdocument id (itemId)
+exports.removeItem = async (req, res) => {
+  try {
+    const { userId, itemId } = req.body;
+    if (!userId || !itemId) return res.status(400).json({ message: 'userId and itemId required' });
+
+    const basket = await Basket.findOne({ userId });
+    if (!basket) return res.status(404).json({ message: 'Basket not found' });
+
+    const idx = basket.items.findIndex(i => i._id.toString() === itemId);
+    if (idx === -1) return res.status(404).json({ message: 'Item not found in basket' });
+
+    basket.items.splice(idx, 1);
+    await basket.save();
+    await basket.populate('items.product');
+    res.json({ message: 'Item removed', basket });
+  } catch (err) {
+    res.status(500).json({ message: 'Error removing item', error: err.message });
+  }
+};
+
+// Clear all items for a user's basket
+exports.clearBasket = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ message: 'userId required' });
+
+    const basket = await Basket.findOneAndUpdate({ userId }, { items: [] }, { new: true });
+    if (!basket) return res.status(404).json({ message: 'Basket not found' });
+
+    await basket.populate('items.product');
+    res.json({ message: 'Basket cleared', basket });
+  } catch (err) {
+    res.status(500).json({ message: 'Error clearing basket', error: err.message });
+  }
+};
